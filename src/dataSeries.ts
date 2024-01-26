@@ -1,4 +1,4 @@
-type DataSeries = {
+export type DataSeries = {
   date: number;
   value: number;
 }
@@ -133,3 +133,6 @@ export const dataSeries: DataSeries[] = [
     {date: 1683504000000, value: 85354499},
     {date: 1683590400000, value: 100097391}
 ];
+
+// clone the previous dataSeries with new values
+export const dataSeries2 = dataSeries.map((d) => ({...d, value: d.value * 1.3}));
