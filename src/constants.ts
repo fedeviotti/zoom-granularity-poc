@@ -5,6 +5,7 @@ export const MS_IN_ONE_MONTH = 2592000000;
 export const OPTIONS: ApexOptions = {
   chart: {
     id: "zoom-chart",
+    group: "nhoa-chart-group",
     animations: {
       enabled: false
     },
@@ -41,6 +42,7 @@ export const OPTIONS: ApexOptions = {
   },
   yaxis: {
     labels: {
+      minWidth: 40,
       formatter: function (val: number) {
         return (val / 1000000).toFixed(0);
       }
@@ -65,6 +67,7 @@ export const OPTIONS: ApexOptions = {
 export const OPTIONS2: ApexOptions = {
   chart: {
     id: "zoom-chart-2",
+    group: "nhoa-chart-group",
     animations: {
       enabled: false
     },
@@ -101,6 +104,7 @@ export const OPTIONS2: ApexOptions = {
   },
   yaxis: {
     labels: {
+      minWidth: 40,
       formatter: function (val: number) {
         return (val / 1000000).toFixed(0);
       }
