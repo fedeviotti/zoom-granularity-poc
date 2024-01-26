@@ -21,6 +21,7 @@ type DataFetchProps = {
   xMin: number;
   xMax: number;
   targetGranularity: Granularity;
+  index: number;
 }
 
 type GetSeriesProps = {
@@ -65,96 +66,115 @@ export const LineChart = () => {
     setSeries(tmpSeries);
   }, [series]);
 
-  const beforeDataFetch = () => {
-    setIsFetchingData(true);
-    OPTIONS.forEach((_option, i) => {
-      ApexCharts.exec(`zoom-chart-${i}`, 'updateOptions',
-        {
-          chart: {
-            zoom: { enabled: false },
-            toolbar: { show: false }
-          }
-        });
-    });
+  const beforeDataFetch = (i: number) => {
+    ApexCharts.exec(`zoom-chart-${i}`, 'updateOptions',
+      {
+        chart: {
+          zoom: { enabled: false },
+          toolbar: { show: false }
+        }
+      });
   }
 
-  const dataFetch = ({data, xMin, xMax, targetGranularity}: DataFetchProps) => {
-    OPTIONS.forEach((_option, i) => {
-      ApexCharts.exec(`zoom-chart-${i}`, 'updateSeries', [{ data }]);
-      if (xMin !== 0 && xMax !== 0) {
-        ApexCharts.exec(`zoom-chart-${i}`, 'zoomX', xMin, xMax);
-      }
+  const dataFetch = async ({data, xMin, xMax, targetGranularity, index}: DataFetchProps) => {
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        ApexCharts.exec(`zoom-chart-${index}`, 'updateSeries', [{data}]);
+        if (xMin !== 0 && xMax !== 0) {
+          ApexCharts.exec(`zoom-chart-${index}`, 'zoomX', xMin, xMax);
+        }
+        ApexCharts.exec(`zoom-chart-${index}`, 'updateOptions',
+          {
+            chart: {
+              zoom: { enabled: true },
+              toolbar: { show: true }
+            }
+          });
+        granularity.current = targetGranularity;
+        resolve();
+      }, 1500);
     });
-    afterDataFetch(targetGranularity);
-  }
-
-  const afterDataFetch = (targetGranularity: Granularity) => {
-    setIsFetchingData(false);
-    OPTIONS.forEach((_option, i) => {
-      ApexCharts.exec(`zoom-chart-${i}`, 'updateOptions',
-        {
-          chart: {
-            zoom: { enabled: true },
-            toolbar: { show: true }
-          }
-        });
-    });
-    granularity.current = targetGranularity;
   }
 
   const beforeZoom = (_chartContext: never, options: ApexOptions) => {
-    beforeDataFetch();
-    OPTIONS.forEach((_option, i) => {
-      const xMin = options?.xaxis?.min || 0;
-      const xMax = options?.xaxis?.max || 0;
-      const zoomDiff = xMax - xMin;
+    const xMin = options?.xaxis?.min || 0;
+    const xMax = options?.xaxis?.max || 0;
+    const zoomDiff = xMax - xMin;
 
-      if (zoomLimits.current.min !== xMin && zoomLimits.current.max !== xMax) {
-        zoomLimits.current = { min: xMin, max: xMax };
+    if (zoomLimits.current.min !== xMin && zoomLimits.current.max !== xMax) {
+      zoomLimits.current = { min: xMin, max: xMax };
 
         if (zoomDiff < MS_IN_ONE_MONTH && granularity.current === "TWO_DAYS") {
-          setTimeout(() => {
+          setIsFetchingData(true);
+
+          OPTIONS.forEach(async (_option, index) => {
+            beforeDataFetch(index);
             console.log("increase granularity");
-            dataFetch({data: getOneDayDataSeries({data: dataSeries[i]}), xMin, xMax, targetGranularity: "ONE_DAY"});
-          }, 1500);
+            await dataFetch({
+              data: getOneDayDataSeries({data: dataSeries[index]}),
+              xMin,
+              xMax,
+              targetGranularity: "ONE_DAY",
+              index
+            });
+            if (OPTIONS.length - 1 === index) {
+              setIsFetchingData(false);
+            }
+          });
         } else if (zoomDiff > MS_IN_ONE_MONTH && granularity.current === "ONE_DAY") {
-          setTimeout(() => {
+          setIsFetchingData(true);
+          OPTIONS.forEach(async (_option, index) => {
+            beforeDataFetch(index);
             console.log("decrease granularity");
-            dataFetch({data: getTwoDaysDataSeries({data: dataSeries[i]}), xMin, xMax, targetGranularity: "TWO_DAYS"});
-          }, 1500);
+            await dataFetch({
+              data: getTwoDaysDataSeries({data: dataSeries[index]}),
+              xMin,
+              xMax,
+              targetGranularity: "TWO_DAYS",
+              index
+            });
+            if (OPTIONS.length - 1 === index) {
+              setIsFetchingData(false);
+            }
+          });
         }
-      } else {
-        zoomLimits.current = { min: 0, max: 0 };
-      }
-    });
+
+    } else {
+      zoomLimits.current = { min: 0, max: 0 };
+    }
   }
 
   const beforeResetZoom = () => {
-    beforeDataFetch();
-    OPTIONS.forEach((_option, i) => {
-      setTimeout(() => {
-        console.log("reset granularity");
-        dataFetch({data: getTwoDaysDataSeries({data: dataSeries[i]}), xMin: 0, xMax: 0, targetGranularity: "TWO_DAYS"});
-      }, 1500);
+    setIsFetchingData(true);
+    OPTIONS.forEach(async (_option, index) => {
+      beforeDataFetch(index);
+      console.log("reset granularity");
+      await dataFetch({
+        data: getTwoDaysDataSeries({data: dataSeries[index]}),
+        xMin: 0,
+        xMax: 0,
+        targetGranularity: "TWO_DAYS",
+        index
+      });
+      if (OPTIONS.length - 1 === index) {
+        setIsFetchingData(false);
+      }
     });
   }
 
   return (
     <Flex h="2xl" direction="row" gap="8">
-      <Flex h="2xl" direction="column" gap="8" justify="end">
-        {isFetchingData && <Progress size='xs' isIndeterminate w={800} />}
-        <Chart
-          options={{...OPTIONS[0], chart: { ...OPTIONS[0].chart, events: { beforeZoom, beforeResetZoom } }}}
-          series={series[0] || []} type="area" width={800}
-        />
-      </Flex>
-      <Flex h="2xl" direction="column" gap="8" justify="end">
-        {isFetchingData && <Progress size='xs' isIndeterminate w={800} />}
-        <Chart
-          options={{...OPTIONS[1], chart: { ...OPTIONS[1].chart, events: { beforeZoom, beforeResetZoom } }}}
-          series={series[1] || []} type="area" width={800}
-        />
-      </Flex>
+      {
+        OPTIONS.map((options, index) => (
+          <Flex key={options.chart?.id} h="2xl" direction="column" gap="8" justify="end">
+            {isFetchingData && <Progress size='xs' isIndeterminate w={800} />}
+            <Chart
+              options={{...options, chart: { ...options.chart, events: { beforeZoom, beforeResetZoom } }}}
+              series={series[index] || []} type="area" width={800}
+            />
+          </Flex>
+        ))
+      }
     </Flex>
   );
 }
