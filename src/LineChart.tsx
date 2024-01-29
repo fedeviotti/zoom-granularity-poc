@@ -149,22 +149,21 @@ export const LineChart = () => {
     }
   }
 
-  const beforeResetZoom = () => {
+  const beforeResetZoom = async (index: number) => {
     setIsFetchingData(true);
-    OPTIONS.forEach(async (_option, index) => {
-      beforeDataFetch(index);
-      console.log("reset granularity");
-      await dataFetch({
-        data: getTwoDaysDataSeries({data: dataSeries[index]}),
-        xMin: 0,
-        xMax: 0,
-        targetGranularity: "twoDays",
-        index
-      });
-      if (OPTIONS.length - 1 === index) {
-        setIsFetchingData(false);
-      }
+    beforeDataFetch(index);
+    console.log("reset granularity");
+    await dataFetch({
+      data: getTwoDaysDataSeries({data: dataSeries[index]}),
+      xMin: 0,
+      xMax: 0,
+      targetGranularity: "twoDays",
+      index
     });
+    if (OPTIONS.length - 1 === index) {
+      zoomLimits.current = { min: 0, max: 0 };
+      setIsFetchingData(false);
+    }
   }
 
   return (
@@ -177,7 +176,7 @@ export const LineChart = () => {
               <Box>Current Granularity: {Object.entries(MAP_GRANULARITIES).find(([key]) => key === granularity.current)?.[1]}</Box>
             }
             <Chart
-              options={{...options, chart: { ...options.chart, events: { beforeZoom, beforeResetZoom } }}}
+              options={{...options, chart: { ...options.chart, events: { beforeZoom, beforeResetZoom: () => beforeResetZoom(index) } }}}
               series={series[index] || []} type="area" width={800}
             />
           </Flex>
