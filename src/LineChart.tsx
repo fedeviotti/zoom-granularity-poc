@@ -28,6 +28,11 @@ type GetSeriesProps = {
   data: DataSeries[];
 }
 
+type ZoomLimits = {
+  min: number;
+  max: number;
+}
+
 const getOneDayDataSeries = ({ data }: GetSeriesProps) => {
   const result = data.reduce(
     (acc: number[][], series) => [...acc, [series.date, series.value]],
@@ -52,7 +57,7 @@ export const LineChart = () => {
   const [series, setSeries] = React.useState<Series[][]>([]);
   const [isFetchingData, setIsFetchingData] = React.useState<boolean>(false);
   const granularity = React.useRef<GranularityKeys>("twoDays");
-  const zoomLimits = React.useRef<{min: number, max: number}>({min: 0, max: 0});
+  const zoomLimits = React.useRef<ZoomLimits>({min: 0, max: 0});
 
   React.useEffect(() => {
     if (series.length > 0) {
