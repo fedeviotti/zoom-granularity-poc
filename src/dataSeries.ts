@@ -10,7 +10,7 @@ const INITIAL_VALUE = 160379978;
 const dataSeries1: DataSeries[] = [];
 const dataSeries2: DataSeries[] = [];
 
-for (let i = 0; i < 130; i++) {
+for (let i = 0; i < 60; i++) {
   dataSeries1.push({
     date: INITIAL_DATE + i * INTERVAL,
     value: INITIAL_VALUE + Math.round(Math.random() * 10000000)
