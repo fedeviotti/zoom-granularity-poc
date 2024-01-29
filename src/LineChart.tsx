@@ -2,11 +2,13 @@ import React from "react";
 import Chart from 'react-apexcharts';
 import {DataSeries, dataSeries} from "./dataSeries.ts";
 import {
+  GranularityKeys,
+  MAP_GRANULARITIES,
   MS_IN_ONE_MONTH,
   OPTIONS
 } from "./constants.ts";
 import {ApexOptions} from "apexcharts";
-import {Flex, Progress} from "@chakra-ui/react";
+import {Box, Flex, Progress} from "@chakra-ui/react";
 
 
 type Series = {
@@ -14,13 +16,11 @@ type Series = {
   data: number[][];
 }
 
-type Granularity = "ONE_DAY" | "TWO_DAYS";
-
 type DataFetchProps = {
   data: number[][];
   xMin: number;
   xMax: number;
-  targetGranularity: Granularity;
+  targetGranularity: GranularityKeys;
   index: number;
 }
 
@@ -51,7 +51,7 @@ const getTwoDaysDataSeries = ({ data }: GetSeriesProps) => {
 export const LineChart = () => {
   const [series, setSeries] = React.useState<Series[][]>([]);
   const [isFetchingData, setIsFetchingData] = React.useState<boolean>(false);
-  const granularity = React.useRef<"ONE_DAY" | "TWO_DAYS">("TWO_DAYS");
+  const granularity = React.useRef<GranularityKeys>("twoDays");
   const zoomLimits = React.useRef<{min: number, max: number}>({min: 0, max: 0});
 
   React.useEffect(() => {
@@ -104,7 +104,7 @@ export const LineChart = () => {
     if (zoomLimits.current.min !== xMin && zoomLimits.current.max !== xMax) {
       zoomLimits.current = { min: xMin, max: xMax };
 
-        if (zoomDiff < MS_IN_ONE_MONTH && granularity.current === "TWO_DAYS") {
+        if (zoomDiff < MS_IN_ONE_MONTH && granularity.current === "twoDays") {
           setIsFetchingData(true);
 
           OPTIONS.forEach(async (_option, index) => {
@@ -114,14 +114,14 @@ export const LineChart = () => {
               data: getOneDayDataSeries({data: dataSeries[index]}),
               xMin,
               xMax,
-              targetGranularity: "ONE_DAY",
+              targetGranularity: "oneDay",
               index
             });
             if (OPTIONS.length - 1 === index) {
               setIsFetchingData(false);
             }
           });
-        } else if (zoomDiff > MS_IN_ONE_MONTH && granularity.current === "ONE_DAY") {
+        } else if (zoomDiff > MS_IN_ONE_MONTH && granularity.current === "oneDay") {
           setIsFetchingData(true);
           OPTIONS.forEach(async (_option, index) => {
             beforeDataFetch(index);
@@ -130,7 +130,7 @@ export const LineChart = () => {
               data: getTwoDaysDataSeries({data: dataSeries[index]}),
               xMin,
               xMax,
-              targetGranularity: "TWO_DAYS",
+              targetGranularity: "twoDays",
               index
             });
             if (OPTIONS.length - 1 === index) {
@@ -153,7 +153,7 @@ export const LineChart = () => {
         data: getTwoDaysDataSeries({data: dataSeries[index]}),
         xMin: 0,
         xMax: 0,
-        targetGranularity: "TWO_DAYS",
+        targetGranularity: "twoDays",
         index
       });
       if (OPTIONS.length - 1 === index) {
@@ -167,7 +167,10 @@ export const LineChart = () => {
       {
         OPTIONS.map((options, index) => (
           <Flex key={options.chart?.id} h="2xl" direction="column" gap="8" justify="end">
-            {isFetchingData && <Progress size='xs' isIndeterminate w={800} />}
+            {isFetchingData ?
+              <Progress size='xs' isIndeterminate w={800} /> :
+              <Box>Current Granularity: {Object.entries(MAP_GRANULARITIES).find(([key]) => key === granularity.current)?.[1]}</Box>
+            }
             <Chart
               options={{...options, chart: { ...options.chart, events: { beforeZoom, beforeResetZoom } }}}
               series={series[index] || []} type="area" width={800}

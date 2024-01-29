@@ -2,6 +2,13 @@ import {ApexOptions} from "apexcharts";
 
 export const MS_IN_ONE_MONTH = 2592000000;
 
+export type GranularityLabels = "One day" | "Two days";
+export type GranularityKeys = "oneDay" | "twoDays";
+export const MAP_GRANULARITIES: Record<GranularityKeys, GranularityLabels> = {
+  oneDay: "One day",
+  twoDays: "Two days",
+}
+
 export const OPTIONS: ApexOptions[] = [{
   chart: {
     id: "zoom-chart-0",
